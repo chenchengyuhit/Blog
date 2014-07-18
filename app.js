@@ -12,6 +12,9 @@ var settings = require('./settings');
 var flash = require('connect-flash');
 
 var app = express();
+var fs = require('fs');
+var accessLog = fs.createWriteStream('accessLog', {flags: 'a'});
+var errorLog = fs.createWriteStream('errorLog', {flags: 'a'});
 // all environments
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
@@ -19,6 +22,7 @@ app.set('view engine', 'ejs');
 app.use(flash());
 app.use(express.favicon());
 app.use(express.logger('dev'));
+app.use(express.logger({stream: accessLog}));
 /**
 app.use(express.bodyParser());相当于
 app.use(express.json());
@@ -42,6 +46,11 @@ app.use(express.session({
 // app.use(app.router);
 //app.use(express.router(routes));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(function (err, req, res, next) {
+  	var meta = '[' + new Date() + '] ' + req.url + '\n';
+  	errorLog.write(meta + err.stack + '\n');
+  	next();
+});
 
 // development only
 if ('development' == app.get('env')) {
